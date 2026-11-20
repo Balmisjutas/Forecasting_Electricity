@@ -397,7 +397,7 @@ forecast_analysis <- function(mois_ts, start_test_date) {
     layout(
       title = paste("SNaive forecast (", title_period, ")"),
       xaxis = list(title="Date"),
-      yaxis = list(title="Consumption (MW)"),
+      yaxis = list(title="Monthly sum of 30-min MW values"),
       hovermode='x unified'
     )
   
@@ -523,7 +523,7 @@ rolling_forecast <- function(
     layout(
       title = paste("Rolling forecast -", modele_nom, "h=", h),
       xaxis = list(title = "Date"),
-      yaxis = list(title = "Consumption (MW)"),
+      yaxis = list(title = "Monthly sum of 30-min MW values"),
       hovermode = 'x unified'
     )
   
@@ -651,7 +651,7 @@ ui <- fluidPage(
           radioButtons(
             "mod_type",
             "Model type:",
-            choices = c("auto.arima", "Graphically determined SARIMA"),
+            choices = c("SARIMA(1,0,1)(0,1,2)[12], fixed order" = "auto.arima", "SARIMA(2,0,1)(1,1,1)[12], chosen from ACF/PACF" = "Graphically determined SARIMA"),
             selected = "auto.arima"
           ),
           conditionalPanel(
@@ -809,7 +809,7 @@ server <- function(input, output, session) {
       layout(
         title = "Monthly raw consumption",
         xaxis = list(title = "Date"),
-        yaxis = list(title = "MW")
+        yaxis = list(title = "Monthly sum of 30-min MW values")
       )
   })
   
@@ -833,7 +833,7 @@ server <- function(input, output, session) {
     ) +
       geom_line() +
       ggtitle("Monthplot of consumption") +
-      xlab("Month") + ylab("Consumption (MW)") +
+      xlab("Month") + ylab("Monthly sum of 30-min MW values") +
       scale_y_continuous(labels = scales::comma_format(big.mark = " ", decimal.mark = ",")) +
       theme_minimal()
     ggplotly(g, tooltip = "y")
@@ -871,7 +871,7 @@ server <- function(input, output, session) {
           tickvals = 1:12, 
           ticktext = mois_noms
         ),
-        yaxis = list(title = "Daily consumption (MW)")
+        yaxis = list(title = "Daily sum of 30-min MW values")
       )
   })
   
@@ -903,7 +903,7 @@ server <- function(input, output, session) {
     ) %>%
       layout(
         xaxis = list(title = "Month"),
-        yaxis = list(title = "Daily average consumption (MW)"),
+        yaxis = list(title = "Mean daily sum of 30-min MW values"),
         hoverlabel = list(namelength = -1)
       )
   })
@@ -1020,7 +1020,7 @@ server <- function(input, output, session) {
       layout(
         title = "Daily mean by day of the week",
         xaxis = list(title = "Day"),
-        yaxis = list(title = "MW")
+        yaxis = list(title = "Daily sum of 30-min MW values")
       )
   })
   
@@ -1191,7 +1191,7 @@ server <- function(input, output, session) {
     if (input$mod_type == "auto.arima") {
       model <- auto_arima_model()
       prefix_label = "ARIMA(1,0,1)(0,1,2)[12]"
-      cat("=== ARIMA(1,0,1)(0,1,2)[12] (auto.arima) ===\n\n")
+      cat("=== ARIMA(1,0,1)(0,1,2)[12] (fixed order) ===\n\n")
       print(summary(model))
     } else {
       req(manual_sarima_model())
@@ -1262,7 +1262,7 @@ server <- function(input, output, session) {
       layout(
         title = paste("Forecast -", label),
         xaxis=list(title="Date"),
-        yaxis=list(title="Consumption (MW)"),
+        yaxis=list(title="Monthly sum of 30-min MW values"),
         hovermode='x unified'
       )
   })
@@ -1312,7 +1312,7 @@ server <- function(input, output, session) {
       layout(
         title = paste("Zoom on test period -", label),
         xaxis = list(range = c(min(test_dates), max(test_dates))),
-        yaxis=list(title="Consumption (MW)"),
+        yaxis=list(title="Monthly sum of 30-min MW values"),
         hovermode='x unified'
       )
   })
