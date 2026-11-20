@@ -52,9 +52,28 @@ La liste complète des paquets est en tête de `app.R`. Les étiquettes de mois 
 - Pas de variable de température ni de calendrier (jours fériés, vacances).
 - Le test porte sur 12 points mensuels : les métriques varient beaucoup d'une période à l'autre.
 
-## Suite prévue
+## Partie 2 : GAM journalier en Python (novembre 2026)
 
-- Passer en données journalières et en Python.
-- Ajouter un modèle additif (GAM) avec la température et le calendrier, et comparer ses erreurs à SARIMA
-  et à la baseline sur la même période de test.
-- Afficher, pour chaque jour, la part de chaque effet (température, calendrier, saison) dans la prévision.
+Page : `docs/index.html` (GitHub Pages). Code : `gam/`.
+
+- Données ODRÉ (Licence Ouverte v2.0) : consommation brute (2016 – sept. 2026), températures quotidiennes
+  régionales (2016 – oct. 2026), éCO2mix national consolidé pour la prévision J-1 de RTE (jusqu'à août 2026).
+- Modèle (pyGAM) : s(température lissée) + s(jour de l'année, cyclique) + f(jour de la semaine) + f(férié)
+  + f(niveau annuel). Apprentissage 2016 – août 2025, test sept. 2025 – août 2026.
+- Résultat sur le test (354 jours) : MAPE 2,31 % pour le GAM, 2,37 % pour la prévision J-1 de RTE,
+  8,56 % pour le naïf saisonnier. RMSE : 1,52 GW pour le GAM, 1,37 GW pour RTE.
+- Limite : le GAM utilise la température observée, RTE une température prévue. La comparaison favorise
+  le GAM ; elle ne montre pas un modèle meilleur que RTE.
+- La page décompose chaque jour : base + température + saison + jour de la semaine + férié = prévision,
+  puis réalisé et erreur (graphique D3), et liste les 10 plus grosses erreurs.
+
+Reproduire :
+
+```bash
+cd gam
+# télécharger les trois exports CSV dans gam/data_raw/ (voir les URL dans build_data.py)
+uv run python build_data.py   # -> gam/data/daily.csv
+uv run python fit.py          # -> docs/data/*.json et docs/data/data.js
+```
+
+Code écrit avec un assistant IA ; j'ai fixé la conception, les règles de validation et les vérifications.

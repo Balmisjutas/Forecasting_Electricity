@@ -1,0 +1,5 @@
+[project]
+name = "gam-load"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["pandas", "numpy", "pygam", "holidays", "scipy"]

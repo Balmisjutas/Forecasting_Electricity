@@ -1,0 +1,35 @@
+{
+ "train": [
+  "2016-01-01",
+  "2025-08-30"
+ ],
+ "test": [
+  "2025-09-01",
+  "2026-08-31"
+ ],
+ "models": {
+  "GAM (observed temperature)": {
+   "n_days": 354,
+   "rmse_gw": 1.515,
+   "mae_gw": 1.149,
+   "mape_pct": 2.31
+  },
+  "RTE day-ahead forecast": {
+   "n_days": 354,
+   "rmse_gw": 1.373,
+   "mae_gw": 1.174,
+   "mape_pct": 2.37
+  },
+  "Seasonal naive (52 weeks before)": {
+   "n_days": 354,
+   "rmse_gw": 6.105,
+   "mae_gw": 4.491,
+   "mape_pct": 8.56
+  }
+ },
+ "smoothing_alpha": 0.5,
+ "pseudo_r2": 0.9798,
+ "days_without_rte_forecast": 0,
+ "days_gam_closer_than_rte": 207,
+ "days_compared": 354
+}
