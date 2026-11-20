@@ -5,123 +5,108 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Consommation expliquée jour par jour</title>
 <meta name="description" content="Un modèle additif (GAM) explique la consommation électrique française de chaque jour, terme par terme, et la compare à la prévision J-1 publiée par RTE.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
+/* Same look as felipealvarez.art: one serif, white page, ink and grey, one accent (navy). */
 :root {
   color-scheme: light;
-  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
-  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
-  --s1: #2a78d6; --s2: #eb6834; --up: #2a78d6; --down: #e34948; --total: #52514e; --mid: #f0efec;
+  --page: #ffffff; --ink: #141414; --grey: #6b6b6b; --rule: #d9d9d9; --navy: #1b3a6b;
+  --minus: #b3b3b3; --total: #4a4a4a;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
-    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
-    --s1: #3987e5; --s2: #d95926; --up: #3987e5; --down: #e66767; --total: #c3c2b7; --mid: #383835;
+    --page: #141414; --ink: #ececec; --grey: #a0a0a0; --rule: #333333; --navy: #8fb0e3;
+    --minus: #5e5e5e; --total: #bdbdbd;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
-  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
-  --s1: #3987e5; --s2: #d95926; --up: #3987e5; --down: #e66767; --total: #c3c2b7; --mid: #383835;
+  --page: #141414; --ink: #ececec; --grey: #a0a0a0; --rule: #333333; --navy: #8fb0e3;
+  --minus: #5e5e5e; --total: #bdbdbd;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--page); color: var(--ink);
-  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
-h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 8px; }
-h2 { font-size: 1.15rem; margin: 40px 0 6px; }
+  font: 19px/1.5 "EB Garamond", Garamond, Georgia, serif; font-variant-numeric: lining-nums; }
+main { max-width: 900px; margin: 0 auto; padding: 56px 16px 80px; }
+h1 { font-weight: 400; font-size: 2.1rem; line-height: 1.2; margin: 0 0 6px; }
+.sub { color: var(--grey); font-style: italic; margin: 0 0 28px; }
+h2 { font-weight: 700; font-size: 1.2rem; margin: 52px 0 4px; }
 p { margin: 6px 0 12px; }
-.lead { color: var(--ink-2); max-width: 70ch; }
-.muted { color: var(--muted); font-size: .9rem; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 20px 0 8px; }
-.tile .v { font-size: 1.8rem; font-weight: 650; font-variant-numeric: tabular-nums; }
-.tile .k { color: var(--ink-2); font-size: .9rem; }
-.tile .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
-.note { border-left: 3px solid var(--axis); padding: 4px 12px; color: var(--ink-2); margin: 12px 0; }
-#line { width: 100%; height: 380px; }
-#shape { width: 100%; height: 260px; }
-.split { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: start; }
-@media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
-#wf svg { width: 100%; height: auto; display: block; }
-#wf .lbl { fill: var(--ink-2); font-size: 12px; }
-#wf .val { fill: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
-#wf .axis line, #wf .axis path { stroke: var(--axis); }
-#wf .axis text { fill: var(--muted); font-size: 11px; }
-#wf .gridl line { stroke: var(--grid); }
-#wf .gridl path { display: none; }
-.explain { font-size: .95rem; }
-.explain b { font-variant-numeric: tabular-nums; }
-.pick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
-input[type=date], button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--axis);
-  border-radius: 6px; padding: 4px 8px; }
-button { cursor: pointer; }
-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: .93rem; }
-th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--grid); }
-th:first-child, td:first-child { text-align: left; }
-th { color: var(--ink-2); font-weight: 600; }
+.cap { color: var(--grey); font-style: italic; font-size: .92rem; }
+a { color: var(--navy); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+ul { padding-left: 1.1em; margin: 6px 0 12px; }
+li { margin: 3px 0; }
+li::marker { content: "–  "; color: var(--grey); }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: lining-nums tabular-nums; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--rule); }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+thead th { font-weight: 600; border-bottom: 1px solid var(--ink); }
+td.hl { color: var(--navy); font-weight: 600; }
 tbody tr.click { cursor: pointer; }
-tbody tr.click:hover { background: var(--mid); }
+tbody tr.click:hover td { color: var(--navy); }
 .scroll { overflow-x: auto; }
-.tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border);
-  border-radius: 6px; padding: 6px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.12); display: none; z-index: 10; }
-a { color: var(--s1); }
-footer { margin-top: 48px; color: var(--muted); font-size: .88rem; }
+#line { width: 100%; height: 380px; margin-top: 8px; }
+#shape { width: 100%; height: 260px; }
+.split { display: grid; grid-template-columns: 1.35fr 1fr; gap: 28px; align-items: start; margin-top: 8px; }
+@media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+#wf svg { width: 100%; height: auto; display: block; font-family: "EB Garamond", Georgia, serif; }
+#wf .lbl { fill: var(--ink); font-size: 14px; }
+#wf .val { fill: var(--ink); font-size: 14px; font-variant-numeric: lining-nums tabular-nums; }
+#wf .axis line, #wf .axis path { stroke: var(--rule); }
+#wf .axis text { fill: var(--grey); font-size: 12px; }
+#wf .gridl line { stroke: var(--rule); stroke-opacity: .6; }
+#wf .gridl path { display: none; }
+.explain p { margin: 0 0 10px; }
+.pick { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+input[type=date], button { font: inherit; font-size: .95rem; color: var(--ink); background: transparent;
+  border: 0; border-bottom: 1px solid var(--grey); padding: 2px 4px; }
+button { cursor: pointer; color: var(--navy); border-bottom-color: var(--navy); }
+.tip { position: fixed; pointer-events: none; background: var(--page); color: var(--ink); border: 1px solid var(--rule);
+  padding: 4px 8px; font-size: 15px; display: none; z-index: 10; }
+footer { margin-top: 56px; padding-top: 12px; border-top: 1px solid var(--rule); color: var(--grey); font-size: .9rem; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Consommation électrique en France : chaque jour expliqué terme par terme</h1>
-  <p class="lead">Un modèle additif généralisé (GAM) prévoit la consommation moyenne de chaque jour à partir de la
-  température, de la saison, du jour de la semaine et des jours fériés. Comme le modèle est une somme de termes,
-  on peut lire pour chaque jour la part de chaque facteur, et voir où l'erreur apparaît.</p>
-  <p class="muted" id="period"></p>
+  <h1>Consommation électrique en France : chaque jour expliqué par la température, la saison et le calendrier</h1>
+  <p class="sub">Modèle additif généralisé (GAM) sur données ouvertes RTE. Felipe Alvarez, novembre 2026.</p>
 
-  <div class="tiles" id="tiles"></div>
-  <div class="note"><b>Limite importante :</b> le GAM utilise la température <i>observée</i> du jour. La prévision J-1 de RTE
-  devait utiliser une température <i>prévue</i>. La comparaison n'est donc pas équitable en faveur du GAM : elle montre
-  ce que la structure du modèle explique, pas un modèle « meilleur que RTE ».</div>
+  <p>Le modèle est une somme de termes. Pour chaque jour, on lit donc ce qu'ajoute chaque facteur, et où naît l'erreur.
+  C'est un modèle explicatif, pas un outil de prévision opérationnel : la prévision J-1 de RTE reste nettement meilleure.</p>
 
-  <h2>Prévision et réalisé, jour par jour</h2>
-  <p class="muted">Puissance moyenne journalière en GW (énergie du jour = valeur × 24 h). Cliquez sur un jour pour l'expliquer ci-dessous.</p>
-  <div class="card"><div id="line"></div></div>
+  <h2>Erreurs sur 12 mois de test (sept. 2025 – août 2026, 365 jours)</h2>
+  <div class="scroll"><table id="metrics"></table></div>
+  <ul id="notes"></ul>
 
-  <h2 id="wf-title">Pourquoi ce jour ?</h2>
-  <div class="pick"><label for="day">Jour :</label><input type="date" id="day"><button id="worst">Pire jour du GAM</button></div>
+  <h2>Réalisé, GAM et prévision J-1 de RTE, jour par jour</h2>
+  <p class="cap">Puissance moyenne du jour en GW (énergie du jour = valeur × 24 h). Cliquez sur un jour pour l'expliquer.</p>
+  <div id="line"></div>
+
+  <h2 id="wf-title">Pourquoi ce jour</h2>
+  <div class="pick"><label for="day">Jour</label><input type="date" id="day"><button id="worst">plus grosse erreur du GAM</button></div>
   <div class="split">
-    <div class="card"><div id="wf"></div></div>
-    <div class="card explain" id="explain"></div>
+    <div id="wf"></div>
+    <div class="explain" id="explain"></div>
   </div>
 
-  <h2>Erreurs sur l'année de test</h2>
-  <div class="card scroll"><table id="metrics"></table></div>
-  <p class="muted" id="closer"></p>
+  <h2>Les 10 plus grosses erreurs : chaleur de l'été, week-ends d'hiver</h2>
+  <p class="cap">Un suivi de la qualité des prévisions commence par cette liste. « Terme dominant » = le plus grand terme du jour ; ce n'est pas forcément le terme fautif. Cliquez sur une ligne.</p>
+  <div class="scroll"><table id="worst10"></table></div>
 
-  <h2>Les 10 jours où le GAM se trompe le plus</h2>
-  <p class="muted">Un outil de suivi de la qualité des prévisions commence par cette liste : quels jours, quelle taille d'erreur, quel terme est en cause. Cliquez sur une ligne.</p>
-  <div class="card scroll"><table id="worst10"></table></div>
-
-  <h2>Ce que le modèle a appris : l'effet de la température</h2>
-  <p class="muted">Écart de consommation (GW) par rapport à un jour moyen, selon la température lissée. Le chauffage électrique fait monter la courbe quand il fait froid.</p>
-  <div class="card"><div id="shape"></div></div>
+  <h2 id="thermo-title">Thermosensibilité : en hiver, chaque degré en moins ajoute environ 2,3 GW</h2>
+  <p class="cap" id="thermo-cap"></p>
+  <div id="shape"></div>
 
   <h2>Méthode</h2>
-  <div class="card">
-  <p><b>Modèle</b> (Python, pyGAM) : consommation ~ s(température lissée) + s(jour de l'année, cyclique) + f(jour de la semaine) + f(férié) + f(niveau annuel).</p>
-  <p><b>Température lissée</b> : moyenne exponentielle (aujourd'hui 50 %, hier 25 %, avant-hier 12,5 %…), car les bâtiments réagissent aux derniers jours de météo. Le coefficient a été choisi sur une année de validation (sept. 2024 – août 2025), pas sur l'année de test.</p>
-  <p><b>Niveau annuel</b> : un niveau par bloc de 12 mois. Une tendance continue extrapolait mal après la baisse de 2022-2023 (erreur moyenne de 13,9 % en validation contre 2,1 %), elle a donc été retirée. Les jours de test utilisent le niveau des 12 derniers mois d'apprentissage.</p>
-  <p><b>Lecture des termes</b> : 0 correspond à un jour ordinaire (effet moyen pour la température et la saison, moyenne des 7 jours pour le jour de la semaine, jour non férié). La base est la consommation d'un tel jour au niveau des 12 derniers mois.</p>
-  <p><b>Effet météo</b> : même jour, même modèle, avec la température normale pour cette date (moyenne des années d'apprentissage). La différence est la part due à la météo du jour.</p>
-  <p><b>Limites</b> : les termes sont des parties du modèle, pas des causes prouvées. La température nationale est une moyenne simple des 13 régions métropolitaines, non pondérée par la population. Sans archives de prévisions météo, on ne peut pas séparer l'erreur due à la prévision météo de l'erreur du modèle ; avec les données internes d'un fournisseur, cette séparation devient possible. Quelques jours manquent dans les données publiques (354 jours de test sur 365).</p>
-  </div>
+  <ul id="method"></ul>
 
   <footer>
-  <p>Données ouvertes (Licence Ouverte v2.0), portail ODRE : consommation quotidienne brute (RTE, pas de 30 min) ;
-  températures quotidiennes régionales ; éCO2mix national consolidé (prévision J-1 de RTE). Jours fériés : paquet Python <code>holidays</code>.</p>
-  <p>Felipe Alvarez. Code écrit avec un assistant IA ; j'ai fixé la conception, les règles de validation et les vérifications.
-  Code : <a href="https://github.com/Balmisjutas/Forecasting_Electricity">github.com/Balmisjutas/Forecasting_Electricity</a>.</p>
+  <p>Données ouvertes ODRÉ (Licence Ouverte v2.0) : consommation quotidienne brute (RTE, pas de 30 min) ; températures quotidiennes régionales ; éCO2mix national consolidé (prévision J-1 de RTE). Jours fériés : paquet Python <i>holidays</i>.</p>
+  <p>Code écrit avec un assistant IA ; j'ai fixé la conception, les règles de validation et les vérifications.
+  Code : <a href="https://github.com/Balmisjutas/Forecasting_Electricity">github.com/Balmisjutas/Forecasting_Electricity</a></p>
   </footer>
 </main>
 <div class="tip" id="tip"></div>
@@ -134,48 +119,47 @@ const D = window.GAM_DATA, days = D.days, M = D.metrics;
 const byDate = Object.fromEntries(days.map(d => [d.date, d]));
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const fr = (x, k = 1) => x.toLocaleString("fr-FR", { minimumFractionDigits: k, maximumFractionDigits: k });
-const sgn = (x, k = 1) => (x > 0 ? "+" : x < 0 ? "−" : "") + fr(Math.abs(x), k);
+const sgn = (x, k = 1) => { const r = +x.toFixed(k); return (r > 0 ? "+" : r < 0 ? "−" : "") + fr(Math.abs(r), k); };
 const fmtDate = s => new Date(s + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-const TERM_FR = { Temperature: "Température", Season: "Saison", Weekday: "Jour de la semaine", Holiday: "Jour férié" };
-const MODEL_FR = { "GAM (observed temperature)": "GAM (température observée)", "RTE day-ahead forecast": "Prévision J-1 de RTE", "Seasonal naive (52 weeks before)": "Naïf saisonnier (52 semaines avant)" };
+const V = D.validation;
+const TERM_FR = { Temperature: "Température", Season: "Saison", Weekday: "Jour de la semaine", Holiday: "Jour férié", Bridge: "Pont", Christmas: "Fêtes de fin d'année" };
+const MODEL_FR = {
+  gam: "GAM, température observée du jour",
+  gam_d1: "GAM, température connue jusqu'à la veille",
+  rte_corr: "Prévision J-1 de RTE, décalage corrigé",
+  rte_raw: "Prévision J-1 de RTE, brute",
+  naive7: "Même jour, 7 jours avant",
+  naive52: "Même jour, 52 semaines avant",
+};
+const FONT = '"EB Garamond", Georgia, serif';
 
-document.getElementById("period").textContent =
-  `Apprentissage : ${M.train[0]} au ${M.train[1]}. Test : ${M.test[0]} au ${M.test[1]} (12 derniers mois avec la prévision RTE publiée).`;
-
-// ---- tiles
-const g = M.models["GAM (observed temperature)"], r = M.models["RTE day-ahead forecast"], nv = M.models["Seasonal naive (52 weeks before)"];
-document.getElementById("tiles").innerHTML = [
-  ["--s1", fr(g.mape_pct, 2) + " %", "Erreur moyenne du GAM (MAPE)"],
-  ["--s2", fr(r.mape_pct, 2) + " %", "Erreur moyenne de la prévision J-1 de RTE"],
-  [null, fr(nv.mape_pct, 2) + " %", "Erreur du modèle naïf (même jour, un an avant)"],
-].map(([c, v, k]) => `<div class="card tile"><div class="v">${v}</div><div class="k">${c ? `<span class="dot" style="background:var(${c})"></span>` : ""}${k}</div></div>`).join("");
-
-// ---- line chart
-function plotLayout(extra) {
+// ---- line + shape charts (Plotly)
+function plotLayout(id, extra) {
   return Object.assign({
+    width: document.getElementById(id).clientWidth,
     paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
-    font: { family: "system-ui, sans-serif", color: css("--ink-2"), size: 12 },
-    margin: { l: 48, r: 12, t: 8, b: 36 }, hovermode: "x unified",
-    hoverlabel: { bgcolor: css("--surface"), bordercolor: css("--axis"), font: { color: css("--ink") } },
-    xaxis: { gridcolor: css("--grid"), linecolor: css("--axis"), zeroline: false },
-    yaxis: { gridcolor: css("--grid"), linecolor: css("--axis"), zeroline: false, ticksuffix: " GW" },
-    legend: { orientation: "h", y: 1.08, x: 0 },
+    font: { family: FONT, color: css("--grey"), size: 14 },
+    margin: { l: 52, r: 8, t: 8, b: 36 }, hovermode: "x unified",
+    hoverlabel: { bgcolor: css("--page"), bordercolor: css("--rule"), font: { family: FONT, color: css("--ink"), size: 14 } },
+    xaxis: { gridcolor: "rgba(0,0,0,0)", linecolor: css("--rule"), zeroline: false },
+    yaxis: { gridcolor: css("--rule"), linecolor: "rgba(0,0,0,0)", zeroline: false, ticksuffix: " GW" },
+    legend: { orientation: "h", y: 1.1, x: 0, font: { color: css("--ink") } },
   }, extra || {});
 }
 function drawLine() {
   const x = days.map(d => d.date);
   Plotly.react("line", [
-    { x, y: days.map(d => d.actual), name: "Réalisé", mode: "lines", line: { color: css("--ink"), width: 2 }, hovertemplate: "%{y:.1f} GW" },
-    { x, y: days.map(d => d.gam), name: "GAM", mode: "lines", line: { color: css("--s1"), width: 2 }, hovertemplate: "%{y:.1f} GW" },
-    { x, y: days.map(d => d.rte), name: "RTE J-1", mode: "lines", line: { color: css("--s2"), width: 2, dash: "dot" }, hovertemplate: "%{y:.1f} GW" },
-  ], plotLayout({ width: document.getElementById("line").clientWidth, shapes: current ? [{ type: "line", x0: current, x1: current, yref: "paper", y0: 0, y1: 1, line: { color: css("--muted"), width: 1, dash: "dash" } }] : [] }),
+    { x, y: days.map(d => d.actual), name: "Réalisé", mode: "lines", line: { color: css("--ink"), width: 1.6 }, hovertemplate: "%{y:.1f} GW" },
+    { x, y: days.map(d => d.gam), name: "GAM", mode: "lines", line: { color: css("--navy"), width: 1.6 }, hovertemplate: "%{y:.1f} GW" },
+    { x, y: days.map(d => d.rte), name: "RTE J-1 (corrigé)", mode: "lines", line: { color: css("--grey"), width: 1.4, dash: "dot" }, hovertemplate: "%{y:.1f} GW" },
+  ], plotLayout("line", { shapes: current ? [{ type: "line", x0: current, x1: current, yref: "paper", y0: 0, y1: 1, line: { color: css("--grey"), width: 1, dash: "dash" } }] : [] }),
   { displayModeBar: false, responsive: true });
 }
 function drawShape() {
-  const sh = D.shapes.Temperature, mean = sh.y.reduce((a, b) => a + b, 0) / sh.y.length;
-  Plotly.react("shape", [{ x: sh.x, y: sh.y.map(v => v - mean), mode: "lines", line: { color: css("--s1"), width: 2 },
+  const sh = D.shapes.Temperature, keep = sh.x.map(v => v <= M.max_temp_s_train);
+  Plotly.react("shape", [{ x: sh.x.filter((v, i) => keep[i]), y: sh.y.filter((v, i) => keep[i]), mode: "lines", line: { color: css("--navy"), width: 2 },
     hovertemplate: "%{x:.1f} °C : %{y:+.1f} GW<extra></extra>", showlegend: false }],
-    plotLayout({ width: document.getElementById("shape").clientWidth, hovermode: "closest", xaxis: { gridcolor: css("--grid"), linecolor: css("--axis"), zeroline: false, ticksuffix: " °C" } }),
+    plotLayout("shape", { hovermode: "closest", xaxis: { gridcolor: "rgba(0,0,0,0)", linecolor: css("--rule"), zeroline: false, ticksuffix: " °C" } }),
     { displayModeBar: false, responsive: true });
 }
 
@@ -187,7 +171,7 @@ function hideTip() { tip.style.display = "none"; }
 function drawWaterfall(d) {
   const steps = [];
   let run = d.base;
-  steps.push({ name: "Base (jour ordinaire)", kind: "total", y0: 0, y1: run, v: run });
+  steps.push({ name: "Jour ordinaire", kind: "total", y0: 0, y1: run, v: run });
   for (const k of Object.keys(TERM_FR)) {
     const v = d.terms[k];
     steps.push({ name: TERM_FR[k], kind: v >= 0 ? "up" : "down", y0: run, y1: run + v, v });
@@ -196,77 +180,79 @@ function drawWaterfall(d) {
   steps.push({ name: "Prévision GAM", kind: "total", y0: 0, y1: d.gam, v: d.gam });
   steps.push({ name: "Réalisé", kind: "actual", y0: 0, y1: d.actual, v: d.actual });
 
-  const W = Math.max(320, document.getElementById("wf").clientWidth || 620), narrow = W < 500;
-  const H = 340, m = { l: narrow ? 118 : 150, r: 52, t: 8, b: 28 };
-  const lo = Math.min(...steps.filter(s => s.kind !== "total" && s.kind !== "actual").flatMap(s => [s.y0, s.y1]), d.gam, d.actual) - 4;
+  const W = Math.max(320, document.getElementById("wf").clientWidth || 560), narrow = W < 500;
+  const H = 390, m = { l: narrow ? 120 : 136, r: 52, t: 6, b: 26 };
+  const lo = Math.min(...steps.filter(s => s.kind === "up" || s.kind === "down").flatMap(s => [s.y0, s.y1]), d.base, d.gam, d.actual) - 4;
   const hi = Math.max(...steps.flatMap(s => [s.y0, s.y1])) + 2;
   const x = d3.scaleLinear().domain([Math.max(0, Math.floor(lo / 5) * 5), Math.ceil(hi / 5) * 5]).range([m.l, W - m.r]);
-  const y = d3.scaleBand().domain(steps.map(s => s.name)).range([m.t, H - m.b]).padding(0.28);
-  const color = { up: css("--up"), down: css("--down"), total: css("--total"), actual: css("--ink") };
+  const y = d3.scaleBand().domain(steps.map(s => s.name)).range([m.t, H - m.b]).padding(0.34);
+  const color = { up: css("--navy"), down: css("--minus"), total: css("--total"), actual: css("--ink") };
 
   const host = d3.select("#wf"); host.selectAll("*").remove();
   const svg = host.append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
     .attr("aria-label", `Décomposition de la prévision du ${d.date}`);
   svg.append("g").attr("class", "gridl").attr("transform", `translate(0,${H - m.b})`)
-    .call(d3.axisBottom(x).ticks(6).tickSize(-(H - m.b - m.t)).tickFormat(""));
+    .call(d3.axisBottom(x).ticks(narrow ? 4 : 6).tickSize(-(H - m.b - m.t)).tickFormat(""));
   svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b})`)
     .call(d3.axisBottom(x).ticks(narrow ? 4 : 6).tickFormat(v => v + " GW"));
   const x0 = x.domain()[0];
   const row = svg.selectAll("g.row").data(steps).join("g").attr("class", "row");
-  row.append("text").attr("class", "lbl").attr("x", m.l - 8).attr("y", s => y(s.name) + y.bandwidth() / 2)
+  row.append("text").attr("class", "lbl").attr("x", m.l - 10).attr("y", s => y(s.name) + y.bandwidth() / 2)
     .attr("dy", "0.35em").attr("text-anchor", "end").text(s => s.name);
   row.append("rect")
     .attr("x", s => x(Math.max(x0, Math.min(s.y0, s.y1))))
-    .attr("width", s => Math.max(2, Math.abs(x(Math.max(x0, s.y1)) - x(Math.max(x0, s.y0)))))
-    .attr("y", s => y(s.name)).attr("height", y.bandwidth()).attr("rx", 4)
+    .attr("width", s => Math.max(1.5, Math.abs(x(Math.max(x0, s.y1)) - x(Math.max(x0, s.y0)))))
+    .attr("y", s => y(s.name)).attr("height", y.bandwidth())
     .attr("fill", s => color[s.kind]);
   row.append("text").attr("class", "val").attr("y", s => y(s.name) + y.bandwidth() / 2).attr("dy", "0.35em")
     .attr("x", s => x(Math.max(s.y0, s.y1)) + 6)
     .text(s => s.kind === "up" || s.kind === "down" ? sgn(s.v) : fr(s.v));
-  // connectors between running totals
-  svg.selectAll("line.conn").data(steps.slice(0, 5)).join("line").attr("class", "conn")
+  svg.selectAll("line.conn").data(steps.slice(0, 7)).join("line").attr("class", "conn")
     .attr("x1", s => x(s.y1)).attr("x2", s => x(s.y1))
-    .attr("y1", (s, i) => y(s.name) + y.bandwidth()).attr("y2", (s, i) => y(steps[i + 1].name))
-    .attr("stroke", css("--muted")).attr("stroke-dasharray", "2,2");
-  // hover targets: full row height
+    .attr("y1", s => y(s.name) + y.bandwidth()).attr("y2", (s, i) => y(steps[i + 1].name))
+    .attr("stroke", css("--grey")).attr("stroke-dasharray", "2,2");
   row.append("rect").attr("x", 0).attr("width", W).attr("y", s => y(s.name) - y.step() * y.paddingInner() / 2)
     .attr("height", y.step()).attr("fill", "transparent")
-    .on("mousemove", (ev, s) => showTip(ev, `<b>${s.name}</b><br>${s.kind === "up" || s.kind === "down" ? sgn(s.v, 2) + " GW" : fr(s.v, 2) + " GW"}`))
+    .on("mousemove", (ev, s) => showTip(ev, `${s.name} : ${s.kind === "up" || s.kind === "down" ? sgn(s.v, 2) : fr(s.v, 2)} GW`))
     .on("mouseleave", hideTip);
 }
 
 function explain(d) {
   const err = d.gam - d.actual, rerr = d.rte == null ? null : d.rte - d.actual;
   const ranked = Object.entries(d.terms).filter(([, v]) => Math.abs(v) >= 0.05).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
-  const parts = ranked.map(([k, v]) => `${TERM_FR[k].toLowerCase()} <b>${sgn(v)} GW</b>`).join(", ");
+  const parts = ranked.map(([k, v]) => `${TERM_FR[k].toLowerCase()} ${sgn(v)} GW`).join(", ");
   const w = d.weather_effect;
-  document.getElementById("wf-title").textContent = "Pourquoi ce jour ? " + fmtDate(d.date);
+  document.getElementById("wf-title").textContent = "Pourquoi ce jour : " + fmtDate(d.date);
   document.getElementById("explain").innerHTML = `
-    <p>Le GAM prévoit <b>${fr(d.gam)} GW</b> en moyenne sur la journée. Un jour ordinaire serait à <b>${fr(d.base)} GW</b> ;
-    les termes ajoutent : ${parts || "presque rien"}.</p>
-    <p>Température lissée <b>${fr(d.temp_s)} °C</b>, contre <b>${fr(d.temp_normal)} °C</b> pour une date normale.
-    Avec la température normale, le GAM prévoirait <b>${fr(d.gam - w)} GW</b> : la météo du jour compte pour <b>${sgn(w)} GW</b>.</p>
-    <p>Réalisé : <b>${fr(d.actual)} GW</b>. Erreur du GAM : <b>${sgn(err)} GW</b> (${sgn(err / d.actual * 100)} %).
-    ${rerr == null ? "Pas de prévision RTE publiée ce jour." : `Erreur de la prévision J-1 de RTE : <b>${sgn(rerr)} GW</b>.`}</p>
-    ${d.holiday ? "<p>Jour férié : le modèle n'a qu'un seul effet « férié » pour toute l'année, il se trompe souvent sur les fériés d'été ou les ponts.</p>" : ""}
-    <p class="muted">Texte généré à partir des seuls nombres du modèle (gabarit fixe, pas de modèle de langage). Les termes sont des parties du modèle, pas des causes prouvées.</p>`;
+    <p>Prévision du GAM : <b>${fr(d.gam)} GW</b>. Un jour ordinaire : ${fr(d.base)} GW. Les termes ajoutent : ${parts || "presque rien"}.</p>
+    <p>Météo : ${fr(d.temp_s)} °C (lissée)${d.temp_interp ? ", valeur interpolée" : ""}, contre ${fr(d.temp_clim)} °C en moyenne 2016-2025 pour cette date. Part de cet écart de température : <b>${sgn(w)} GW</b>.</p>
+    <p>Réalisé : <b>${fr(d.actual)} GW</b>. Erreur du GAM : ${sgn(err)} GW (${sgn(err / d.actual * 100)} %).
+    ${rerr == null ? "Pas de prévision RTE publiée ce jour." : `Erreur de RTE J-1 (corrigée) : ${sgn(rerr)} GW.`}</p>
+    ${d.holiday ? "<p>Jour férié : les fériés restent plus mal prévus que les autres jours (voir les limites).</p>" : ""}
+    ${d.temp_s > M.max_temp_s_train ? `<p>Température au-dessus du maximum vu en apprentissage (${fr(M.max_temp_s_train)} °C) : le modèle extrapole ; il sous-estime probablement la climatisation.</p>` : ""}
+    <p class="cap">Texte construit à partir des seuls nombres du modèle (gabarit fixe, sans modèle de langage).</p>`;
 }
 
 // ---- tables
 function drawTables() {
-  const rows = Object.entries(M.models).map(([k, v]) =>
-    `<tr><td>${MODEL_FR[k] || k}</td><td>${fr(v.mape_pct, 2)} %</td><td>${fr(v.mae_gw, 2)}</td><td>${fr(v.rmse_gw, 2)}</td><td>${v.n_days}</td></tr>`).join("");
+  const order = ["gam", "gam_d1", "rte_corr", "rte_raw", "naive7", "naive52"];
+  const rows = order.map(k => { const v = M.models[k];
+    return `<tr><td>${MODEL_FR[k]}</td><td${k === "rte_corr" ? ' class="hl"' : ""}>${fr(v.mape_pct, 2)} %</td><td>${fr(v.mae_gw, 2)}</td><td>${fr(v.rmse_gw, 2)}</td><td>${sgn(v.bias_gw, 2)}</td></tr>`; }).join("");
   document.getElementById("metrics").innerHTML =
-    `<thead><tr><th>Modèle</th><th>MAPE</th><th>MAE (GW)</th><th>RMSE (GW)</th><th>Jours</th></tr></thead><tbody>${rows}</tbody>`;
-  document.getElementById("closer").textContent =
-    `Le GAM est plus proche du réalisé que la prévision J-1 de RTE ${M.days_gam_closer_than_rte} jours sur ${M.days_compared}, avec l'avantage injuste de la température observée. RTE a la plus petite RMSE : il évite mieux les grosses erreurs.`;
+    `<thead><tr><th></th><th>MAPE</th><th>MAE (GW)</th><th>RMSE (GW)</th><th>Biais (GW)</th></tr></thead><tbody>${rows}</tbody>`;
+  const o = M.rte_offset_gw;
+  document.getElementById("notes").innerHTML = [
+    `MAPE = erreur absolue moyenne en %. La meilleure valeur est en bleu.`,
+    `La prévision J-1 brute de RTE est inférieure au réalisé de ${fr(Math.abs(o), 2)} GW en moyenne sur les 12 mois avant le test (même écart, ${fr(Math.abs(M.rte_offset_vs_eco2mix_gw), 2)} GW, face à la consommation éCO2mix). C'est probablement un décalage de niveau ou de périmètre, pas une erreur de prévision. La ligne « corrigée » retire ce décalage, connu avant le test.`,
+    `La température observée avantage le GAM : RTE doit utiliser une température prévue. Avec la seule température de la veille, le GAM passe de ${fr(M.models.gam.mape_pct, 2)} % à ${fr(M.models.gam_d1.mape_pct, 2)} %.`,
+  ].map(t => `<li>${t}</li>`).join("");
   const worst = [...days].sort((a, b) => Math.abs(b.gam - b.actual) - Math.abs(a.gam - a.actual)).slice(0, 10);
   document.getElementById("worst10").innerHTML =
-    `<thead><tr><th>Jour</th><th>Réalisé</th><th>GAM</th><th>Erreur GAM</th><th>Erreur RTE</th><th>Plus gros terme</th></tr></thead><tbody>` +
+    `<thead><tr><th>Jour</th><th>Réalisé</th><th>GAM</th><th>Erreur GAM</th><th>Erreur RTE</th><th>Terme dominant</th></tr></thead><tbody>` +
     worst.map(d => {
       const [tk, tv] = Object.entries(d.terms).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))[0];
-      return `<tr class="click" data-d="${d.date}"><td>${d.date}${d.holiday ? " (férié)" : ""}</td><td>${fr(d.actual)}</td><td>${fr(d.gam)}</td>
-      <td>${sgn(d.gam - d.actual)}</td><td>${d.rte == null ? "—" : sgn(d.rte - d.actual)}</td><td>${TERM_FR[tk]} ${sgn(tv)}</td></tr>`;
+      return `<tr class="click" data-d="${d.date}"><td>${d.date}${d.holiday ? " (férié)" : d.pont ? " (pont)" : ""}</td><td>${fr(d.actual)}</td><td>${fr(d.gam)}</td>
+      <td>${sgn(d.gam - d.actual)}</td><td>${d.rte == null ? "–" : sgn(d.rte - d.actual)}</td><td>${TERM_FR[tk]} ${sgn(tv)}</td></tr>`;
     }).join("") + "</tbody>";
   document.querySelectorAll("#worst10 tr.click").forEach(tr => tr.addEventListener("click", () => {
     select(tr.dataset.d); document.getElementById("wf-title").scrollIntoView({ behavior: "smooth" });
@@ -287,10 +273,32 @@ dayInput.addEventListener("change", e => select(e.target.value));
 document.getElementById("worst").addEventListener("click", () =>
   select([...days].sort((a, b) => Math.abs(b.gam - b.actual) - Math.abs(a.gam - a.actual))[0].date));
 
-drawTables(); drawShape();
-// default: the coldest test day, where the temperature term matters most
-select([...days].sort((a, b) => a.temp_s - b.temp_s)[0].date);
-document.getElementById("line").on("plotly_click", ev => select(ev.points[0].x.slice(0, 10)));
+function drawText() {
+  const m = M;
+  document.getElementById("thermo-title").textContent =
+    `Thermosensibilité : en hiver, chaque degré en moins ajoute environ ${fr(Math.abs(m.slope_0_5_gw_per_c))} GW`;
+  document.getElementById("thermo-cap").textContent =
+    `Effet de la température lissée appris par le modèle, en GW par rapport à un jour moyen : ${sgn(m.slope_0_5_gw_per_c, 2)} GW/°C entre 0 et 5 °C, ${sgn(m.slope_5_10_gw_per_c, 2)} GW/°C entre 5 et 10 °C. Courbe tracée jusqu'au maximum vu en apprentissage (${fr(m.max_temp_s_train)} °C).`;
+  const li = [
+    `<b>Modèle</b> (Python, pyGAM) : consommation ~ s(température lissée) + s(jour de l'année, cyclique) + f(type de jour) + f(pont) + f(fêtes de fin d'année) + f(niveau annuel). Type de jour : lundi à dimanche, plus un niveau propre pour un férié en semaine ; un férié le week-end ne change rien. Pont : lundi avant un mardi férié, vendredi après un jeudi férié. Fêtes : du 24 décembre au 1er janvier.`,
+    `<b>Température lissée</b> : moyenne exponentielle (aujourd'hui ${fr(m.alpha * 100, 0)} %, hier ${fr(m.alpha * (1 - m.alpha) * 100, 0)} %…), car les bâtiments réagissent aux derniers jours de météo. Coefficient choisi sur une année de validation (${V.period[0]} – ${V.period[1]}), pas sur le test : MAPE de validation selon le poids du jour : ${Object.entries(V.alpha).map(([a, v]) => `${+a === 0 ? "sans lissage" : fr(+a * 100, 0) + " %"} → ${fr(v, 2)} %`).join(", ")}.`,
+    `<b>Niveau annuel</b> : un niveau par bloc de 12 mois ; le test utilise le niveau des 12 derniers mois d'apprentissage. Une tendance lisse s(t), extrapolée après la baisse de 2022-2023, donnait ${fr(V.trend.smooth_trend, 2)} % en validation, contre ${fr(V.trend.level_blocks, 2)} % avec les blocs.`,
+    `<b>Lecture des termes</b> : 0 = jour ordinaire (effet moyen pour la température et la saison, moyenne des 7 jours pour le jour de la semaine, jour non férié, ni pont ni fêtes). Le terme « jour férié » est l'écart entre le niveau « férié en semaine » et le jour de semaine concerné.`,
+    `<b>Part de la température</b> : même jour, même modèle, avec la moyenne 2016-2025 de la température lissée pour cette date (lissée sur ±7 jours). Ce n'est pas une « normale » climatique au sens de Météo-France.`,
+    `<b>Limites</b> : modèle de la puissance moyenne du jour seulement (pas de courbe demi-horaire, pas de pointe) ; pas de nébulosité, de vacances scolaires ni d'effet de la sobriété au-delà du niveau annuel. Les résidus restent autocorrélés (ρ₁ = ${fr(m.residual_lag1_autocorr, 2)}) et biaisés en été (${sgn(m.gam_bias_summer_gw, 2)} GW en juin-août) : au-delà de ${fr(m.max_temp_s_train)} °C de température lissée (maximum d'apprentissage ; ${fr(m.max_temp_s_test)} °C au test), le modèle extrapole. Erreur absolue moyenne les jours fériés : ${fr(m.gam_mae_holidays_gw, 2)} GW, contre ${fr(m.gam_mae_other_gw, 2)} GW les autres jours (biais ${sgn(m.gam_bias_weekday_holidays_gw, 2)} GW sur les fériés en semaine). Les plus grosses erreurs restantes tombent les week-ends d'hiver : il manque sans doute une interaction jour de la semaine × température.`,
+    `<b>Termes température et saison</b> : ils sont corrélés (r = ${fr(m.corr_temp_season_terms_train, 2)} en apprentissage), car la date prédit en grande partie la température. Leur partage entre les deux termes n'est donc pas unique (concurvité) ; leur somme est fiable. Les termes sont des parties du modèle, pas des causes prouvées.`,
+    `<b>Honnêteté du test</b> : les termes type de jour, pont et fêtes ont été ajoutés après avoir regardé les erreurs du test. Le chiffre de ${fr(m.models.gam.mape_pct, 2)} % est donc un peu optimiste ; les choix de lissage et de niveau, eux, viennent de l'année de validation.`,
+    `<b>Réglage</b> : une seule pénalité de lissage pour tous les termes (λ = ${fr(m.lam[0], 1)}, choisie par GCV), alors que les résidus sont autocorrélés ; des pénalités par terme feraient mieux. Température nationale = moyenne simple des 13 régions, non pondérée. ${m.interpolated_temp_days_test} jours de test ont une température interpolée (jours de fin de mois absents de l'export ODRÉ).`,
+  ];
+  document.getElementById("method").innerHTML = li.map(t => `<li>${t}</li>`).join("");
+}
+
+function start() {
+  drawTables(); drawShape(); drawText();
+  select([...days].sort((a, b) => a.temp_s - b.temp_s)[0].date);  // coldest test day
+  document.getElementById("line").on("plotly_click", ev => select(ev.points[0].x.slice(0, 10)));
+}
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(start);
 let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { select(current); drawShape(); }, 150); });
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { select(current); drawShape(); });
 </script>

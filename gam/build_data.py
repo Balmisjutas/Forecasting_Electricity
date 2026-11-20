@@ -35,14 +35,22 @@ load = daily_mean(RAW / "load.csv", ["consommation_brute_electricite_rte"])
 load = load[load["n"] >= 46]  # full days only (48 half hours; 46/50 on clock-change days)
 load = load.rename(columns={"consommation_brute_electricite_rte": "load_gw"})[["load_gw"]] / 1000
 
-rte = daily_mean(RAW / "rte.csv", ["prevision_j1"])
-rte = rte[rte["n"] >= 90].rename(columns={"prevision_j1": "rte_d1_gw"})[["rte_d1_gw"]] / 1000
+rte = daily_mean(RAW / "rte.csv", ["prevision_j1", "consommation"])
+rte = rte[rte["n"] >= 90].rename(columns={"prevision_j1": "rte_d1_gw", "consommation": "eco2_cons_gw"})[["rte_d1_gw", "eco2_cons_gw"]] / 1000
 
 temp = pd.read_csv(RAW / "temp.csv", sep=";", encoding="utf-8-sig")
 nreg = temp.groupby("date")["tmoy"].count()
 temp = temp.groupby("date")["tmoy"].mean().rename("temp").to_frame()
 temp = temp[nreg >= 12]
-temp.index = pd.to_datetime(temp.index).date
+temp.index = pd.to_datetime(temp.index)
+# The ODRE temperature export has no row for many month-end days (single missing days).
+# Fill gaps of at most 2 days by linear interpolation and flag them.
+full = pd.date_range(temp.index.min(), temp.index.max(), freq="D")
+temp = temp.reindex(full)
+temp["temp_interp"] = temp["temp"].isna().astype(int)
+temp["temp"] = temp["temp"].interpolate(limit=2)
+temp = temp.dropna()
+temp.index = temp.index.date
 
 df = load.join(temp, how="inner").join(rte, how="left")
 df.index = pd.to_datetime(df.index)
@@ -60,4 +68,4 @@ annual = (df["load_gw"] * 24 / 1000).groupby(df.index.year).sum()
 print("days", len(df), df.index.min().date(), "..", df.index.max().date())
 print("annual TWh (full years):")
 print(annual.round(1).to_string())
-print("missing RTE forecast days:", df["rte_d1_gw"].isna().sum())
+print("missing RTE forecast days:", df["rte_d1_gw"].isna().sum(), "| interpolated temperature days:", df["temp_interp"].sum())

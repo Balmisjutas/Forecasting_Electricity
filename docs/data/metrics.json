@@ -1,35 +1,91 @@
 {
  "train": [
   "2016-01-01",
-  "2025-08-30"
+  "2025-08-31"
  ],
  "test": [
   "2025-09-01",
   "2026-08-31"
  ],
+ "alpha": 0.5,
  "models": {
-  "GAM (observed temperature)": {
-   "n_days": 354,
-   "rmse_gw": 1.515,
-   "mae_gw": 1.149,
-   "mape_pct": 2.31
+  "gam": {
+   "n_days": 365,
+   "mape_pct": 2.16,
+   "mae_gw": 1.062,
+   "rmse_gw": 1.372,
+   "bias_gw": -0.507
   },
-  "RTE day-ahead forecast": {
-   "n_days": 354,
-   "rmse_gw": 1.373,
-   "mae_gw": 1.174,
-   "mape_pct": 2.37
+  "gam_d1": {
+   "n_days": 365,
+   "mape_pct": 2.65,
+   "mae_gw": 1.345,
+   "rmse_gw": 1.722,
+   "bias_gw": -0.477
   },
-  "Seasonal naive (52 weeks before)": {
-   "n_days": 354,
-   "rmse_gw": 6.105,
-   "mae_gw": 4.491,
-   "mape_pct": 8.56
+  "rte_raw": {
+   "n_days": 365,
+   "mape_pct": 2.36,
+   "mae_gw": 1.171,
+   "rmse_gw": 1.369,
+   "bias_gw": -1.11
+  },
+  "rte_corr": {
+   "n_days": 365,
+   "mape_pct": 1.24,
+   "mae_gw": 0.631,
+   "rmse_gw": 0.804,
+   "bias_gw": -0.074
+  },
+  "naive7": {
+   "n_days": 365,
+   "mape_pct": 6.14,
+   "mae_gw": 3.313,
+   "rmse_gw": 4.887,
+   "bias_gw": -0.013
+  },
+  "naive52": {
+   "n_days": 365,
+   "mape_pct": 5.99,
+   "mae_gw": 3.272,
+   "rmse_gw": 4.63,
+   "bias_gw": -0.313
   }
  },
- "smoothing_alpha": 0.5,
- "pseudo_r2": 0.9798,
- "days_without_rte_forecast": 0,
- "days_gam_closer_than_rte": 207,
- "days_compared": 354
+ "rte_offset_gw": -1.04,
+ "rte_offset_vs_eco2mix_gw": -0.98,
+ "residual_lag1_autocorr": 0.77,
+ "gam_mae_holidays_gw": 1.8,
+ "gam_bias_weekday_holidays_gw": -1.13,
+ "gam_mae_other_gw": 1.04,
+ "gam_bias_summer_gw": -1.5,
+ "gam_bias_winter_gw": -0.13,
+ "max_temp_s_train": 27.8,
+ "max_temp_s_test": 29.4,
+ "slope_0_5_gw_per_c": -2.32,
+ "slope_5_10_gw_per_c": -2.04,
+ "corr_temp_season_terms_train": 0.8,
+ "interpolated_temp_days_test": 11,
+ "lam": [
+  0.1,
+  0.1,
+  0.1,
+  0.1,
+  0.1,
+  0.1
+ ],
+ "monthly_bias_gw": {
+  "2025-09": -0.32,
+  "2025-10": 0.17,
+  "2025-11": 0.21,
+  "2025-12": 0.64,
+  "2026-01": -0.39,
+  "2026-02": -0.69,
+  "2026-03": 0.82,
+  "2026-04": -1.03,
+  "2026-05": -1.04,
+  "2026-06": -1.89,
+  "2026-07": -1.52,
+  "2026-08": -1.1
+ }
 }

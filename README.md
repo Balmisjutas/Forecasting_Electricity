@@ -58,14 +58,17 @@ Page : `docs/index.html` (GitHub Pages). Code : `gam/`.
 
 - Données ODRÉ (Licence Ouverte v2.0) : consommation brute (2016 – sept. 2026), températures quotidiennes
   régionales (2016 – oct. 2026), éCO2mix national consolidé pour la prévision J-1 de RTE (jusqu'à août 2026).
-- Modèle (pyGAM) : s(température lissée) + s(jour de l'année, cyclique) + f(jour de la semaine) + f(férié)
-  + f(niveau annuel). Apprentissage 2016 – août 2025, test sept. 2025 – août 2026.
-- Résultat sur le test (354 jours) : MAPE 2,31 % pour le GAM, 2,37 % pour la prévision J-1 de RTE,
-  8,56 % pour le naïf saisonnier. RMSE : 1,52 GW pour le GAM, 1,37 GW pour RTE.
-- Limite : le GAM utilise la température observée, RTE une température prévue. La comparaison favorise
-  le GAM ; elle ne montre pas un modèle meilleur que RTE.
-- La page décompose chaque jour : base + température + saison + jour de la semaine + férié = prévision,
-  puis réalisé et erreur (graphique D3), et liste les 10 plus grosses erreurs.
+- Modèle (pyGAM) : s(température lissée) + s(jour de l'année, cyclique) + f(type de jour, férié en semaine = niveau propre)
+  + f(pont) + f(fêtes de fin d'année) + f(niveau annuel). Apprentissage 2016 – août 2025, validation des choix
+  sur sept. 2024 – août 2025 (`validate.py`), test sept. 2025 – août 2026 (365 jours).
+- Résultat (MAPE) : GAM 2,16 % avec la température observée, 2,65 % avec la température de la veille ;
+  prévision J-1 de RTE 1,24 % une fois retiré son décalage de niveau (-1,04 GW, mesuré sur les 12 mois avant
+  le test), 2,36 % brute ; naïf 52 semaines 5,99 %. RTE reste nettement meilleur : le GAM est un modèle
+  explicatif, pas un outil opérationnel. Les termes calendaires ont été ajoutés après lecture des
+  erreurs du test : le 2,16 % est un peu optimiste.
+- La page décompose chaque jour : base + température + saison + jour de la semaine + férié + pont + fêtes
+  = prévision, puis réalisé et erreur (graphique D3), et liste les 10 plus grosses erreurs. Limites détaillées
+  sur la page (résidus autocorrélés, extrapolation au-delà de 27,8 °C, concurvité température/saison).
 
 Reproduire :
 
@@ -73,6 +76,7 @@ Reproduire :
 cd gam
 # télécharger les trois exports CSV dans gam/data_raw/ (voir les URL dans build_data.py)
 uv run python build_data.py   # -> gam/data/daily.csv
+uv run python validate.py     # -> docs/data/validation.json
 uv run python fit.py          # -> docs/data/*.json et docs/data/data.js
 ```
 
