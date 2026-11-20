@@ -126,6 +126,8 @@ const TERM_FR = { Temperature: "Température", Season: "Saison", Weekday: "Jour 
 const MODEL_FR = {
   gam: "GAM, température observée du jour",
   gam_d1: "GAM, température connue jusqu'à la veille",
+  gam_corr: "GAM, température observée, + correction par les erreurs connues",
+  gam_d1_corr: "GAM, température de la veille, + correction par les erreurs connues",
   rte_corr: "Prévision J-1 de RTE, décalage corrigé",
   rte_raw: "Prévision J-1 de RTE, brute",
   naive7: "Même jour, 7 jours avant",
@@ -235,7 +237,7 @@ function explain(d) {
 
 // ---- tables
 function drawTables() {
-  const order = ["gam", "gam_d1", "rte_corr", "rte_raw", "naive7", "naive52"];
+  const order = ["gam", "gam_d1", "gam_corr", "gam_d1_corr", "rte_corr", "rte_raw", "naive7", "naive52"];
   const rows = order.map(k => { const v = M.models[k];
     return `<tr><td>${MODEL_FR[k]}</td><td${k === "rte_corr" ? ' class="hl"' : ""}>${fr(v.mape_pct, 2)} %</td><td>${fr(v.mae_gw, 2)}</td><td>${fr(v.rmse_gw, 2)}</td><td>${sgn(v.bias_gw, 2)}</td></tr>`; }).join("");
   document.getElementById("metrics").innerHTML =
@@ -245,6 +247,7 @@ function drawTables() {
     `MAPE = erreur absolue moyenne en %. La meilleure valeur est en bleu.`,
     `La prévision J-1 brute de RTE est inférieure au réalisé de ${fr(Math.abs(o), 2)} GW en moyenne sur les 12 mois avant le test (même écart, ${fr(Math.abs(M.rte_offset_vs_eco2mix_gw), 2)} GW, face à la consommation éCO2mix). C'est probablement un décalage de niveau ou de périmètre, pas une erreur de prévision. La ligne « corrigée » retire ce décalage, connu avant le test.`,
     `La température observée avantage le GAM : RTE doit utiliser une température prévue. Avec la seule température de la veille, le GAM passe de ${fr(M.models.gam.mape_pct, 2)} % à ${fr(M.models.gam_d1.mape_pct, 2)} %.`,
+    `Correction par les erreurs connues : les erreurs du GAM se suivent d'un jour à l'autre (ρ₁ = ${fr(M.residual_lag1_autocorr, 2)}, ρ₂ = ${fr(M.residual_lag2_autocorr, 2)}). Une prévision J-1 est faite la veille : elle connaît les erreurs jusqu'à J-2. On ajoute donc k × la moyenne lissée de ces erreurs (k = ${fr(V.errcorr.gam_d1.k, 1)}, lissage ${fr(V.errcorr.gam_d1.beta, 1)} pour la température de la veille ; k et le lissage sont choisis sur l'année de validation). Le GAM avec la température de la veille passe de ${fr(M.models.gam_d1.mape_pct, 2)} % à ${fr(M.models.gam_d1_corr.mape_pct, 2)} %. Avec la température observée, le biais d'été passe de ${sgn(M.gam_bias_summer_gw, 2)} GW à ${sgn(M.gam_corr_bias_summer_gw, 2)} GW. La prévision RTE corrigée reste meilleure.`,
   ].map(t => `<li>${t}</li>`).join("");
   const worst = [...days].sort((a, b) => Math.abs(b.gam - b.actual) - Math.abs(a.gam - a.actual)).slice(0, 10);
   document.getElementById("worst10").innerHTML =
@@ -287,7 +290,7 @@ function drawText() {
     `<b>Part de la température</b> : même jour, même modèle, avec la moyenne 2016-2025 de la température lissée pour cette date (lissée sur ±7 jours). Ce n'est pas une « normale » climatique au sens de Météo-France.`,
     `<b>Limites</b> : modèle de la puissance moyenne du jour seulement (pas de courbe demi-horaire, pas de pointe) ; pas de nébulosité, de vacances scolaires ni d'effet de la sobriété au-delà du niveau annuel. Les résidus restent autocorrélés (ρ₁ = ${fr(m.residual_lag1_autocorr, 2)}) et biaisés en été (${sgn(m.gam_bias_summer_gw, 2)} GW en juin-août) : au-delà de ${fr(m.max_temp_s_train)} °C de température lissée (maximum d'apprentissage ; ${fr(m.max_temp_s_test)} °C au test), le modèle extrapole. Erreur absolue moyenne les jours fériés : ${fr(m.gam_mae_holidays_gw, 2)} GW, contre ${fr(m.gam_mae_other_gw, 2)} GW les autres jours (biais ${sgn(m.gam_bias_weekday_holidays_gw, 2)} GW sur les fériés en semaine). Les plus grosses erreurs restantes tombent les week-ends d'hiver : il manque sans doute une interaction jour de la semaine × température.`,
     `<b>Termes température et saison</b> : ils sont corrélés (r = ${fr(m.corr_temp_season_terms_train, 2)} en apprentissage), car la date prédit en grande partie la température. Leur partage entre les deux termes n'est donc pas unique (concurvité) ; leur somme est fiable. Les termes sont des parties du modèle, pas des causes prouvées.`,
-    `<b>Honnêteté du test</b> : les termes type de jour, pont et fêtes ont été ajoutés après avoir regardé les erreurs du test. Le chiffre de ${fr(m.models.gam.mape_pct, 2)} % est donc un peu optimiste ; les choix de lissage et de niveau, eux, viennent de l'année de validation.`,
+    `<b>Honnêteté du test</b> : les termes type de jour, pont et fêtes ont été ajoutés après avoir regardé les erreurs du test. Le chiffre de ${fr(m.models.gam.mape_pct, 2)} % est donc un peu optimiste ; les choix de lissage et de niveau, eux, viennent de l'année de validation. L'idée de la correction par les erreurs connues vient aussi des erreurs du test ; ses réglages (k, lissage) viennent de l'année de validation.`,
     `<b>Réglage</b> : une seule pénalité de lissage pour tous les termes (λ = ${fr(m.lam[0], 1)}, choisie par GCV), alors que les résidus sont autocorrélés ; des pénalités par terme feraient mieux. Température nationale = moyenne simple des 13 régions, non pondérée. ${m.interpolated_temp_days_test} jours de test ont une température interpolée (jours de fin de mois absents de l'export ODRÉ).`,
   ];
   document.getElementById("method").innerHTML = li.map(t => `<li>${t}</li>`).join("");

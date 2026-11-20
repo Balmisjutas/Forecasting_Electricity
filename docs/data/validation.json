@@ -15,5 +15,19 @@
   "level_blocks": 2.05,
   "smooth_trend": 12.89
  },
- "alpha_chosen": 0.5
+ "alpha_chosen": 0.5,
+ "errcorr": {
+  "gam": {
+   "k": 0.8,
+   "beta": 0.2,
+   "val_before": 2.05,
+   "val_after": 1.63
+  },
+  "gam_d1": {
+   "k": 0.7,
+   "beta": 0.1,
+   "val_before": 2.51,
+   "val_after": 2.31
+  }
+ }
 }

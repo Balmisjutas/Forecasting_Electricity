@@ -66,6 +66,10 @@ Page : `docs/index.html` (GitHub Pages). Code : `gam/`.
   le test), 2,36 % brute ; naïf 52 semaines 5,99 %. RTE reste nettement meilleur : le GAM est un modèle
   explicatif, pas un outil opérationnel. Les termes calendaires ont été ajoutés après lecture des
   erreurs du test : le 2,16 % est un peu optimiste.
+- Correction par les erreurs connues : une prévision J-1 connaît les erreurs jusqu'à J-2 ; on ajoute k fois
+  leur moyenne lissée (k et le lissage choisis sur l'année de validation). GAM avec la température de la veille :
+  2,65 % -> 2,25 % (mieux que RTE brut, moins bien que RTE corrigé) ; avec la température observée : 2,16 % -> 1,56 %.
+  L'idée vient aussi des erreurs du test (autocorrélation 0,77 à un jour).
 - La page décompose chaque jour : base + température + saison + jour de la semaine + férié + pont + fêtes
   = prévision, puis réalisé et erreur (graphique D3), et liste les 10 plus grosses erreurs. Limites détaillées
   sur la page (résidus autocorrélés, extrapolation au-delà de 27,8 °C, concurvité température/saison).

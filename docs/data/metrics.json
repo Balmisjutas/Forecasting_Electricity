@@ -23,6 +23,20 @@
    "rmse_gw": 1.722,
    "bias_gw": -0.477
   },
+  "gam_corr": {
+   "n_days": 365,
+   "mape_pct": 1.56,
+   "mae_gw": 0.788,
+   "rmse_gw": 1.02,
+   "bias_gw": -0.1
+  },
+  "gam_d1_corr": {
+   "n_days": 365,
+   "mape_pct": 2.25,
+   "mae_gw": 1.17,
+   "rmse_gw": 1.553,
+   "bias_gw": -0.142
+  },
   "rte_raw": {
    "n_days": 365,
    "mape_pct": 2.36,
@@ -55,6 +69,9 @@
  "rte_offset_gw": -1.04,
  "rte_offset_vs_eco2mix_gw": -0.98,
  "residual_lag1_autocorr": 0.77,
+ "residual_lag2_autocorr": 0.61,
+ "gam_corr_bias_summer_gw": -0.28,
+ "gam_d1_corr_bias_summer_gw": -0.43,
  "gam_mae_holidays_gw": 1.8,
  "gam_bias_weekday_holidays_gw": -1.13,
  "gam_mae_other_gw": 1.04,

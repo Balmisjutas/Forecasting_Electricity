@@ -47,3 +47,16 @@ def mape(p, y):
     p, y = np.asarray(p), np.asarray(y)
     ok = ~np.isnan(p) & ~np.isnan(y)
     return float(np.mean(np.abs(p[ok] - y[ok]) / y[ok]) * 100)
+
+
+def err_correct(pred, actual, k, beta):
+    """Add k x the smoothed past errors that are KNOWN when a J-1 forecast is made (errors up to D-2)."""
+    e = (actual - pred).ewm(alpha=beta, adjust=False).mean().shift(2)
+    return pred + k * e
+
+
+def predict_d1(gam, d):
+    """Prediction with the temperature known up to the day before (persistence)."""
+    X = d[FEATS].values.copy()
+    X[:, 0] = d["temp_s_d1"].bfill().values
+    return gam.predict(X)

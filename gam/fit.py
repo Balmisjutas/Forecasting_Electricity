@@ -11,6 +11,8 @@ Train: 2016-01-01 .. 2025-08-31.  Test: 2025-09-01 .. 2026-08-31.
 
 LIMITS kept visible on the page:
 - The GAM uses the OBSERVED temperature. A second variant uses the temperature known up to D-1 (persistence).
+- Error correction (validate.py): add k x the smoothed past errors known at forecast time (up to D-2),
+  k and beta chosen on the validation year. Shown for both GAM variants.
 - RTE's prevision_j1 sits about 1 GW under the actual since 2023 (level/perimeter offset, also against
   eCO2mix's own "consommation"). We show RTE raw AND corrected by the mean offset of the 12 months
   before the test (known in advance, so the correction is fair).
@@ -21,7 +23,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from features import FEATS, add_features, fit, load
+from features import FEATS, add_features, err_correct, fit, load, predict_d1
 
 HERE = Path(__file__).parent
 OUT = HERE.parent / "docs" / "data"
@@ -84,6 +86,14 @@ OFFSET = float((pre["rte_d1_gw"] - pre["load_gw"]).mean())
 OFFSET_ECO2 = float((pre["rte_d1_gw"] - pre["eco2_cons_gw"]).mean())
 test["rte_corr"] = test["rte_d1_gw"] - OFFSET
 
+# ---- error correction with the latest known errors (up to D-2); first test days use training-period errors
+full = df[df.index <= TEST_END]
+y = full["load_gw"]
+for name, p in (("gam", pd.Series(gam.predict(full[FEATS].values), full.index)),
+                ("gam_d1", pd.Series(predict_d1(gam, full), full.index))):
+    ec = VAL["errcorr"][name]
+    test[name + "_corr"] = err_correct(p, y, ec["k"], ec["beta"]).reindex(test.index)
+
 
 def metrics(pred):
     m = test[["load_gw"]].assign(p=pred).dropna()
@@ -111,6 +121,8 @@ res = {
     "models": {
         "gam": metrics(test["gam"]),
         "gam_d1": metrics(test["gam_d1"]),
+        "gam_corr": metrics(test["gam_corr"]),
+        "gam_d1_corr": metrics(test["gam_d1_corr"]),
         "rte_raw": metrics(test["rte_d1_gw"]),
         "rte_corr": metrics(test["rte_corr"]),
         "naive7": metrics(test["naive7"]),
@@ -119,6 +131,9 @@ res = {
     "rte_offset_gw": round(OFFSET, 2),
     "rte_offset_vs_eco2mix_gw": round(OFFSET_ECO2, 2),
     "residual_lag1_autocorr": round(float(res_gam.autocorr(1)), 2),
+    "residual_lag2_autocorr": round(float(res_gam.autocorr(2)), 2),
+    "gam_corr_bias_summer_gw": round(float((test["gam_corr"] - test["load_gw"])[test.index.month.isin([6, 7, 8])].mean()), 2),
+    "gam_d1_corr_bias_summer_gw": round(float((test["gam_d1_corr"] - test["load_gw"])[test.index.month.isin([6, 7, 8])].mean()), 2),
     "gam_mae_holidays_gw": round(float(res_gam[hol].abs().mean()), 2),
     "gam_bias_weekday_holidays_gw": round(float(res_gam[hol & (test["weekday"] < 5)].mean()), 2),
     "gam_mae_other_gw": round(float(res_gam[~hol].abs().mean()), 2),
