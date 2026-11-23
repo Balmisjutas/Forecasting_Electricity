@@ -37,8 +37,6 @@ uv run python validate.py     # -> docs/data/validation.json
 uv run python fit.py          # -> docs/data/*.json et docs/data/data.js
 ```
 
-Code écrit avec un assistant IA ; j'ai fixé la conception, les règles de validation et les vérifications.
-
 ## Partie 2 : application R Shiny, prévision mensuelle (2012-2024)
 
 Application R Shiny pour analyser et prévoir la consommation d'électricité de la France métropolitaine
