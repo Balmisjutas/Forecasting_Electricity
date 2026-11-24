@@ -32,10 +32,9 @@ body { margin: 0; background: var(--page); color: var(--ink);
   font: 19px/1.5 "EB Garamond", Garamond, Georgia, serif; font-variant-numeric: lining-nums; }
 main { max-width: 900px; margin: 0 auto; padding: 56px 16px 80px; }
 h1 { font-weight: 400; font-size: 2.1rem; line-height: 1.2; margin: 0 0 6px; }
-.sub { color: var(--grey); font-style: italic; margin: 0 0 28px; }
+.sub { margin: 0 0 28px; }
 h2 { font-weight: 700; font-size: 1.2rem; margin: 52px 0 4px; }
 p { margin: 6px 0 12px; }
-.cap { color: var(--grey); font-style: italic; font-size: .92rem; }
 a { color: var(--navy); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 ul { padding-left: 1.1em; margin: 6px 0 12px; }
 li { margin: 3px 0; }
@@ -66,7 +65,7 @@ input[type=date], button { font: inherit; font-size: .95rem; color: var(--ink); 
 button { cursor: pointer; color: var(--navy); border-bottom-color: var(--navy); }
 .tip { position: fixed; pointer-events: none; background: var(--page); color: var(--ink); border: 1px solid var(--rule);
   padding: 4px 8px; font-size: 15px; display: none; z-index: 10; }
-footer { margin-top: 56px; padding-top: 12px; border-top: 1px solid var(--rule); color: var(--grey); font-size: .9rem; }
+footer { margin-top: 56px; padding-top: 12px; border-top: 1px solid var(--rule); font-size: .9rem; }
 </style>
 </head>
 <body>
@@ -75,14 +74,14 @@ footer { margin-top: 56px; padding-top: 12px; border-top: 1px solid var(--rule);
   <p class="sub">Modèle additif généralisé (GAM) sur données ouvertes RTE. Felipe Alvarez, novembre 2026.</p>
 
   <p>Le modèle est une somme de termes. Pour chaque jour, on lit donc ce qu'ajoute chaque facteur, et où naît l'erreur.
-  C'est un modèle explicatif, pas un outil de prévision opérationnel : la prévision J-1 de RTE reste nettement meilleure.</p>
+  C'est un modèle explicatif, pas un outil de prévision opérationnel : la prévision J-1 de RTE reste nettement meilleure.
+  Cliquez sur un jour du graphique ou sur une ligne du tableau des erreurs pour l'expliquer.</p>
 
   <h2>Erreurs sur 12 mois de test (sept. 2025 – août 2026, 365 jours)</h2>
   <div class="scroll"><table id="metrics"></table></div>
   <ul id="notes"></ul>
 
   <h2>Réalisé, GAM et prévision J-1 de RTE, jour par jour</h2>
-  <p class="cap">Puissance moyenne du jour en GW (énergie du jour = valeur × 24 h). Cliquez sur un jour pour l'expliquer.</p>
   <div id="line"></div>
 
   <h2 id="wf-title">Pourquoi ce jour</h2>
@@ -93,12 +92,11 @@ footer { margin-top: 56px; padding-top: 12px; border-top: 1px solid var(--rule);
   </div>
 
   <h2>Les 10 plus grosses erreurs : chaleur de l'été, week-ends d'hiver</h2>
-  <p class="cap">« Terme dominant » = le plus grand terme du jour ; ce n'est pas forcément le terme fautif. Cliquez sur une ligne.</p>
   <div class="scroll"><table id="worst10"></table></div>
 
   <h2 id="thermo-title">Thermosensibilité : en hiver, chaque degré en moins ajoute environ 2,3 GW</h2>
-  <p class="cap" id="thermo-cap"></p>
   <div id="shape"></div>
+  <p id="thermo-cap"></p>
 
   <h2>Méthode</h2>
   <ul id="method"></ul>
@@ -231,7 +229,7 @@ function explain(d) {
     ${rerr == null ? "Pas de prévision RTE publiée ce jour." : `Erreur de RTE J-1 (corrigée) : ${sgn(rerr)} GW.`}</p>
     ${d.holiday ? "<p>Jour férié : les fériés restent plus mal prévus que les autres jours (voir les limites).</p>" : ""}
     ${d.temp_s > M.max_temp_s_train ? `<p>Température au-dessus du maximum vu en apprentissage (${fr(M.max_temp_s_train)} °C) : le modèle extrapole ; il sous-estime probablement la climatisation.</p>` : ""}
-    <p class="cap">Texte construit à partir des seuls nombres du modèle (gabarit fixe, sans modèle de langage).</p>`;
+`;
 }
 
 // ---- tables
@@ -250,7 +248,7 @@ function drawTables() {
   ].map(t => `<li>${t}</li>`).join("");
   const worst = [...days].sort((a, b) => Math.abs(b.gam - b.actual) - Math.abs(a.gam - a.actual)).slice(0, 10);
   document.getElementById("worst10").innerHTML =
-    `<thead><tr><th>Jour</th><th>Réalisé</th><th>GAM</th><th>Erreur GAM</th><th>Erreur RTE</th><th>Terme dominant</th></tr></thead><tbody>` +
+    `<thead><tr><th>Jour</th><th>Réalisé</th><th>GAM</th><th>Erreur GAM</th><th>Erreur RTE</th><th>Plus grand terme</th></tr></thead><tbody>` +
     worst.map(d => {
       const [tk, tv] = Object.entries(d.terms).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))[0];
       return `<tr class="click" data-d="${d.date}"><td>${d.date}${d.holiday ? " (férié)" : d.pont ? " (pont)" : ""}</td><td>${fr(d.actual)}</td><td>${fr(d.gam)}</td>
@@ -285,6 +283,9 @@ function drawText() {
     `<b>Modèle</b> (Python, pyGAM) : consommation ~ s(température lissée) + s(jour de l'année, cyclique) + f(type de jour) + f(pont) + f(fêtes de fin d'année) + f(niveau annuel). Type de jour : lundi à dimanche, plus un niveau propre pour un férié en semaine ; un férié le week-end ne change rien. Pont : lundi avant un mardi férié, vendredi après un jeudi férié. Fêtes : du 24 décembre au 1er janvier.`,
     `<b>Température lissée</b> : moyenne exponentielle (aujourd'hui ${fr(m.alpha * 100, 0)} %, hier ${fr(m.alpha * (1 - m.alpha) * 100, 0)} %…), car les bâtiments réagissent aux derniers jours de météo. Coefficient choisi sur une année de validation (${V.period[0]} – ${V.period[1]}), pas sur le test : MAPE de validation selon le poids du jour : ${Object.entries(V.alpha).map(([a, v]) => `${+a === 0 ? "sans lissage" : fr(+a * 100, 0) + " %"} → ${fr(v, 2)} %`).join(", ")}.`,
     `<b>Niveau annuel</b> : un niveau par bloc de 12 mois ; le test utilise le niveau des 12 derniers mois d'apprentissage. Une tendance lisse s(t), extrapolée après la baisse de 2022-2023, donnait ${fr(V.trend.smooth_trend, 2)} % en validation, contre ${fr(V.trend.level_blocks, 2)} % avec les blocs.`,
+    `<b>Unité</b> : toutes les valeurs sont des puissances moyennes du jour, en GW (énergie du jour = valeur × 24 h).`,
+    `<b>Textes d'explication</b> : construits à partir des seuls nombres du modèle, avec un gabarit fixe, sans modèle de langage.`,
+    `<b>Plus grand terme</b> : le terme le plus grand du jour en valeur absolue. Ce n'est pas forcément le terme qui cause l'erreur.`,
     `<b>Lecture des termes</b> : 0 = jour ordinaire (effet moyen pour la température et la saison, moyenne des 7 jours pour le jour de la semaine, jour non férié, ni pont ni fêtes). Le terme « jour férié » est l'écart entre le niveau « férié en semaine » et le jour de semaine concerné.`,
     `<b>Part de la température</b> : même jour, même modèle, avec la moyenne 2016-2025 de la température lissée pour cette date (lissée sur ±7 jours). Ce n'est pas une « normale » climatique au sens de Météo-France.`,
     `<b>Limites</b> : modèle de la puissance moyenne du jour seulement (pas de courbe demi-horaire, pas de pointe) ; pas de nébulosité, de vacances scolaires ni d'effet de la sobriété au-delà du niveau annuel. Les résidus restent autocorrélés (ρ₁ = ${fr(m.residual_lag1_autocorr, 2)}) et biaisés en été (${sgn(m.gam_bias_summer_gw, 2)} GW en juin-août) : au-delà de ${fr(m.max_temp_s_train)} °C de température lissée (maximum d'apprentissage ; ${fr(m.max_temp_s_test)} °C au test), le modèle extrapole. Erreur absolue moyenne les jours fériés : ${fr(m.gam_mae_holidays_gw, 2)} GW, contre ${fr(m.gam_mae_other_gw, 2)} GW les autres jours (biais ${sgn(m.gam_bias_weekday_holidays_gw, 2)} GW sur les fériés en semaine). Les plus grosses erreurs restantes tombent les week-ends d'hiver : il manque sans doute une interaction jour de la semaine × température.`,
