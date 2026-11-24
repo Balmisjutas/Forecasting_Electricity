@@ -58,7 +58,12 @@ tbody tr.click:hover td { color: var(--navy); }
 #wf .axis text { fill: var(--grey); font-size: 12px; }
 #wf .gridl line { stroke: var(--rule); stroke-opacity: .6; }
 #wf .gridl path { display: none; }
+.explain { overflow-x: auto; }
 .explain p { margin: 0 0 10px; }
+.facts td { border: 0; padding: 3px 0 3px 14px; vertical-align: baseline; white-space: nowrap; }
+.facts td:first-child { padding-left: 0; }
+.facts tbody + tbody tr:first-child td { padding-top: 22px; }
+.facts { width: auto; margin-bottom: 12px; }
 .pick { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
 input[type=date], button { font: inherit; font-size: .95rem; color: var(--ink); background: transparent;
   border: 0; border-bottom: 1px solid var(--grey); padding: 2px 4px; }
@@ -218,15 +223,20 @@ function drawWaterfall(d) {
 
 function explain(d) {
   const err = d.gam - d.actual, rerr = d.rte == null ? null : d.rte - d.actual;
-  const ranked = Object.entries(d.terms).filter(([, v]) => Math.abs(v) >= 0.05).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
-  const parts = ranked.map(([k, v]) => `${TERM_FR[k].toLowerCase()} ${sgn(v)} GW`).join(", ");
   const w = d.weather_effect;
+  const deg = x => (x < 0 ? "−" : "") + fr(Math.abs(x));
+  const pct = x => sgn(x / d.actual * 100) + " %";
+  const row = (l, v, q = "") => `<tr><td>${l}</td><td>${v}</td><td>${q}</td></tr>`;
   document.getElementById("wf-title").textContent = "Pourquoi ce jour : " + fmtDate(d.date);
   document.getElementById("explain").innerHTML = `
-    <p>Prévision du GAM : <b>${fr(d.gam)} GW</b>. Un jour ordinaire : ${fr(d.base)} GW. Les termes ajoutent : ${parts || "presque rien"}.</p>
-    <p>Météo : ${fr(d.temp_s)} °C (lissée)${d.temp_interp ? ", valeur interpolée" : ""}, contre ${fr(d.temp_clim)} °C en moyenne 2016-2025 pour cette date. Part de cet écart de température : <b>${sgn(w)} GW</b>.</p>
-    <p>Réalisé : <b>${fr(d.actual)} GW</b>. Erreur du GAM : ${sgn(err)} GW (${sgn(err / d.actual * 100)} %).
-    ${rerr == null ? "Pas de prévision RTE publiée ce jour." : `Erreur de RTE J-1 (corrigée) : ${sgn(rerr)} GW.`}</p>
+    <table class="facts"><tbody>
+    ${row("Température lissée" + (d.temp_interp ? " (interpolée)" : ""), deg(d.temp_s) + " °C")}
+    ${row("Moyenne 2016-2025 à cette date", deg(d.temp_clim) + " °C")}
+    ${row("Effet de cet écart", "<b>" + sgn(w) + " GW</b>")}
+    </tbody><tbody>
+    ${row("Erreur GAM", sgn(err) + " GW", pct(err))}
+    ${rerr == null ? row("Erreur RTE J-1", "pas publiée") : row("Erreur RTE J-1 (corrigée)", sgn(rerr) + " GW", pct(rerr))}
+    </tbody></table>
     ${d.holiday ? "<p>Jour férié : les fériés restent plus mal prévus que les autres jours (voir les limites).</p>" : ""}
     ${d.temp_s > M.max_temp_s_train ? `<p>Température au-dessus du maximum vu en apprentissage (${fr(M.max_temp_s_train)} °C) : le modèle extrapole ; il sous-estime probablement la climatisation.</p>` : ""}
 `;
