@@ -58,10 +58,9 @@ tbody tr.click:hover td { color: var(--navy); }
 #wf .axis text { fill: var(--grey); font-size: 12px; }
 #wf .gridl line { stroke: var(--rule); stroke-opacity: .6; }
 #wf .gridl path { display: none; }
-.explain { overflow-x: auto; }
 .explain p { margin: 0 0 10px; }
 .facts td { border: 0; padding: 3px 0 3px 14px; vertical-align: baseline; white-space: nowrap; }
-.facts td:first-child { padding-left: 0; }
+.facts td:first-child { padding-left: 0; white-space: normal; }
 .facts tbody + tbody tr:first-child td { padding-top: 22px; }
 .facts { width: auto; margin-bottom: 12px; }
 .pick { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
@@ -231,7 +230,7 @@ function explain(d) {
   document.getElementById("explain").innerHTML = `
     <table class="facts"><tbody>
     ${row("Température lissée" + (d.temp_interp ? " (interpolée)" : ""), deg(d.temp_s) + " °C")}
-    ${row("Moyenne 2016-2025 à cette date", deg(d.temp_clim) + " °C")}
+    ${row("Moyenne 2016-2025", deg(d.temp_clim) + " °C")}
     ${row("Effet de cet écart", "<b>" + sgn(w) + " GW</b>")}
     </tbody><tbody>
     ${row("Erreur GAM", sgn(err) + " GW", pct(err))}
