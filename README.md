@@ -1,5 +1,9 @@
 # Prévision de la consommation d'électricité en France
 
+Daily model of French electricity demand (a GAM on public RTE data), with a page that explains each day's forecast: https://balmisjutas.github.io/Forecasting_Electricity/
+
+Result on the test year, Sept. 2025 to Aug. 2026 (MAPE): GAM 2.16 % with observed temperature, 2.65 % with the previous day's temperature; RTE's day-ahead forecast 1.24 % after its level offset is removed, 2.36 % raw. RTE stays clearly better: the GAM explains demand, it is not an operational tool. The rest of this README is in French.
+
 Deux parties, sur les données publiques de RTE :
 
 1. un modèle additif généralisé (GAM) journalier en Python, avec une page qui explique chaque jour (novembre 2026) ;
@@ -7,7 +11,7 @@ Deux parties, sur les données publiques de RTE :
 
 ## Partie 1 : GAM journalier en Python (novembre 2026)
 
-Page : `docs/index.html` (GitHub Pages). Code : `gam/`.
+Page : [`docs/index.html`](https://balmisjutas.github.io/Forecasting_Electricity/) (GitHub Pages). Code : `gam/`.
 
 - Données ODRÉ (Licence Ouverte v2.0) : consommation brute (2016 – sept. 2026), températures quotidiennes
   régionales (2016 – oct. 2026), éCO2mix national consolidé pour la prévision J-1 de RTE (jusqu'à août 2026).
